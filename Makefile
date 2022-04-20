@@ -1,3 +1,5 @@
+install:
+	poetry install
 build:
 	poetry build
 package-install:
