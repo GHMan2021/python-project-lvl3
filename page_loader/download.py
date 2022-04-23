@@ -2,39 +2,55 @@ import re
 import requests
 from pathlib import Path
 from bs4 import BeautifulSoup
+from urllib.parse import urlparse, urljoin
 
 
 def save_data(url, output_dir):
-    # удаление "http(s)://" и ".html(/)", "/" в конце
-    # url = ru.hexlet.io/courses
     pattern = r'^https?\:\/\/|\.html\/?$|\/$'
-    url_temp = re.sub(pattern, "", url)
-    # выделение адреса сайта
-    # name_site = ru.hexlet.io
-    name_site = url_temp.split('/')[0]
-    # замена ".",  ":",  "/" на "-"
-    # name_site = ru-hexlet-io
-    pattern = r'[\.\:\/]'
-    name_site = re.sub(pattern, "-", name_site)
-    # name_url = ru-hexlet-io-courses
-    pattern = r'[\.\:\/]'
-    name_url = re.sub(pattern, "-", url_temp)
-    # запись пути файла, возвращаемое значение функции path_to_file
-    file_name = "{}.html".format(name_url)
-    path_to_file = Path(output_dir / file_name)
-    # создание папки
-    folder_name = "{}_files".format(name_url)
-    Path(output_dir / folder_name).mkdir()
+    name_url = re.sub(pattern, "", url)
+    # name_url = ru.hexlet.io/courses
 
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
+    pattern = r'[\.\:\/]'
+    name_html = re.sub(pattern, "-", name_url) + '.html'
+    path_to_html = Path(output_dir / name_html)
+
+    name_dir = re.sub(pattern, "-", name_url) + '_files'
+    output_dir = Path(output_dir / name_dir)
+    output_dir.mkdir()
+
+    o = urlparse(url)
+
+    resp = requests.get(url)
+    soup = BeautifulSoup(resp.content, 'html.parser')
     for img in soup.find_all('img'):
-        src_path = img['src'].replace('/', '-')
-        img['src'] = "{}/{}{}".format(folder_name, name_site, src_path)
-    path_to_file.write_text(soup.prettify())
+        i = urlparse(img['src'])
+        if all([i.scheme != '', i.netloc != o.netloc]):
+            continue
+        else:
+            img_url = urljoin(url, img['src'])
+            # https://ru.hexlet.io/assets/java.png
 
-    return path_to_file
+            pattern = r'[\.\:\/]'
+            img_name = re.sub(pattern, "-", o.netloc)
+            # ru-hexlet-io
 
+            img_name = f"{img_name}{img['src']}"
+            # ru-hexlet-io/assets/java.png
+
+            img_name = img_name.replace("/", '-')
+            # ru-hexlet-io-assets-java.png
+
+            img_path = Path(output_dir / img_name)
+            # .../ru-hexlet-io-assets-java.png
+
+            # with open(img_path, 'wb') as f:
+            #     f.write(requests.get(img_url).content)
+
+            img['src'] = f"{name_dir}/{img_name}"
+
+    path_to_html.write_text(soup.prettify())
+
+    return path_to_html
 
 def download(url, output_dir=None):
     output_dir = Path(Path.cwd() / output_dir)
