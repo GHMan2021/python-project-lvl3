@@ -2,7 +2,7 @@ import re
 import requests
 from pathlib import Path
 from bs4 import BeautifulSoup
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urlparse #, urljoin
 
 
 def save_data(url, output_dir):
@@ -51,6 +51,7 @@ def save_data(url, output_dir):
     path_to_html.write_text(soup.prettify())
 
     return path_to_html
+
 
 def download(url, output_dir=None):
     output_dir = Path(Path.cwd() / output_dir)
