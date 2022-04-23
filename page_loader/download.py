@@ -2,7 +2,8 @@ import re
 import requests
 from pathlib import Path
 from bs4 import BeautifulSoup
-from urllib.parse import urlparse #, urljoin
+from urllib.parse import urlparse
+# urljoin
 
 
 def save_data(url, output_dir):
