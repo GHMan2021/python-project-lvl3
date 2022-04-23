@@ -27,7 +27,7 @@ def save_data(url, output_dir):
         if all([i.scheme != '', i.netloc != o.netloc]):
             continue
         else:
-            img_url = urljoin(url, img['src'])
+            # img_url = urljoin(url, img['src'])
             # https://ru.hexlet.io/assets/java.png
 
             pattern = r'[\.\:\/]'
@@ -40,7 +40,7 @@ def save_data(url, output_dir):
             img_name = img_name.replace("/", '-')
             # ru-hexlet-io-assets-java.png
 
-            img_path = Path(output_dir / img_name)
+            # img_path = Path(output_dir / img_name)
             # .../ru-hexlet-io-assets-java.png
 
             # with open(img_path, 'wb') as f:
