@@ -50,6 +50,10 @@ def save_data(url, output_dir):
 
     path_to_html.write_text(soup.prettify())
 
+    # p = Path(Path.cwd() / 'tests/fixtures/test2/ru-hexlet-io-courses.html')
+    # soup = BeautifulSoup(p.read_text(), 'html.parser')
+    # print(soup.prettify())
+
     return path_to_html
 
 
