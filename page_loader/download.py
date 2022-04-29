@@ -3,6 +3,14 @@ import requests
 from pathlib import Path
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
+from urllib.request import Request, urlopen
+from urllib.error import URLError
+import logging
+
+
+logging.basicConfig(level='WARNING')
+# logger = logging.getLogger(__name__)
+# print(logger)
 
 
 def check_tag(tag, u_netlog):
@@ -36,9 +44,23 @@ def save_data_to_dir(output_dir, tag_lists):
             resp = requests.get(_dict['link'])
             path_to_file = Path(output_dir / _dict['filename'])
             path_to_file.write_text(resp.text)
+    return True
 
 
 def format_page(url, output_dir):
+    req = Request(url)
+    try:
+        urlopen(req)
+    except URLError as e:
+        msg = "Other errors"
+        if hasattr(e, 'reason'):
+            msg = f'''We failed to reach a server. Reason: {e.reason}'''
+            logging.warning(msg)
+        elif hasattr(e, 'code'):
+            msg = f'''The server couldn\'t fulfill the request. Error code: {e.code}'''
+            logging.warning(msg)
+        return msg
+
     u = urlparse(url)
     u_netlog = u.netloc
 
@@ -51,7 +73,6 @@ def format_page(url, output_dir):
 
     resp = requests.get(url)
     soup = BeautifulSoup(resp.content, 'html.parser')
-
     tag_list_all = soup(['link', 'img', 'script'])
 
     tag_lists = []
@@ -91,7 +112,18 @@ def format_page(url, output_dir):
 
 
 def download(url, output_dir=None):
+    logging.info(f'''
+    Запуск программы с параметрами:
+    сохранить в папку - {output_dir}
+    ссылка на страницу - {url}
+    --------------------------''')
+
     output_dir = Path(Path.cwd() / output_dir)
+
+    if not Path.exists(output_dir):
+        logging.warning('Такая папка не существует')
+        raise ValueError('Такая папка не существует')
+
     path_to_file = format_page(url, output_dir)
 
     return path_to_file
