@@ -8,7 +8,8 @@ from urllib.error import URLError
 import logging
 
 
-logging.basicConfig(level='WARNING', format='%(filename)s::%(funcName)s::%(levelname)s: %(message)s')
+param_format = '%(filename)s::%(funcName)s::%(levelname)s: %(message)s'
+logging.basicConfig(level='WARNING', format=param_format)
 
 
 def check_tag(tag, u_netlog):
