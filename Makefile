@@ -11,4 +11,4 @@ lint:
 test:
 	poetry run pytest tests/ -vv --log-cli-level='INFO'
 test-coverage:
-	poetry run pytest --cov=page_loader --cov-report=html tests/
+	poetry run pytest --cov=page_loader --cov-report=xml tests/
