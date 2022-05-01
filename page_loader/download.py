@@ -3,129 +3,116 @@ import requests
 from pathlib import Path
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
-from urllib.request import Request, urlopen
-from urllib.error import URLError
-import logging
+
+from page_loader.logger import logger_config
+import logging.config
 
 
-param_format = '%(filename)s::%(funcName)s::%(levelname)s: %(message)s'
-logging.basicConfig(level='WARNING', format=param_format)
+logging.config.dictConfig(logger_config)
+logger = logging.getLogger()
 
 
-def check_tag(tag, u_netlog):
-    if any([tag.has_attr('src'), tag.has_attr('href')]):
-        attr = tag.get('href', tag.get('src'))
-        a = urlparse(attr)
-        if all([a.scheme != '', a.netloc != u_netlog]):
-            return False
-        return True
-    return False
-
-
-def conv_name(attr):
-    a = urlparse(attr)
+def convert_link_into_name(link):
+    lnk = urlparse(link)
+    # замена символов на тире в названии сайта
     pattern = r'[\.\:]'
-    a_netloc = re.sub(pattern, "-", a.netloc)
+    lnk_netloc = re.sub(pattern, "-", lnk.netloc)
+    # замена символа "/" на "-" в пути адреса
     pattern = r'[\/]'
-    a_path = re.sub(pattern, "-", a.path)
-    if a_path.find('.') == -1:
-        a_path = a_path + '.html'
-    return "{}{}".format(a_netloc, a_path)
+    lnk_path = re.sub(pattern, "-", lnk.path)
+    # добавление расширения .html к странице
+    if lnk_path.find('.') == -1:
+        lnk_path = lnk_path + '.html'
+    return "{}{}".format(lnk_netloc, lnk_path)
 
 
-def save_data_to_dir(output_dir, tag_lists):
-    for _dict in tag_lists:
-        if _dict['type'] == 'img':
-            resp = requests.get(_dict['link'])
-            path_to_file = Path(output_dir / _dict['filename'])
-            path_to_file.write_bytes(resp.content)
-        else:
-            resp = requests.get(_dict['link'])
-            path_to_file = Path(output_dir / _dict['filename'])
-            path_to_file.write_text(resp.text)
+def save_data(resp, path_to_file, tag_name):
+    if tag_name == 'img':
+        path_to_file.write_bytes(resp.content)
+    else:
+        path_to_file.write_text(resp.text)
     return True
 
 
-def format_page(url, output_dir):
+def format_page(url, resp_content, output_dir):
+    logger.debug(f'''
+    Run func with the parameters:
+    url: {url}
+    resp.content: html file
+    path to output folder: {output_dir}''')
 
-    req = Request(url)
-    try:
-        urlopen(req)
-    except URLError as e:
-        msg = "Other errors"
-        if hasattr(e, 'reason'):
-            msg = f"We failed to reach a server. Reason: {e.reason}"
-            logging.warning(msg)
-        elif hasattr(e, 'code'):
-            msg = f"The server couldn\'t fulfill the request. " \
-                  f"Error code: {e.code}"
-            logging.warning(msg)
-        return msg
-
-    u = urlparse(url)
-    u_netlog = u.netloc
-
-    name_html = conv_name(url)
+    name_html = convert_link_into_name(url)
     path_to_html = Path(output_dir / name_html)
 
     name_dir = re.sub(r'(.html)$', '_files', name_html)
     output_dir = Path(output_dir / name_dir)
-    output_dir.mkdir()
+    try:
+        output_dir.mkdir()
+    except FileNotFoundError:
+        raise FileNotFoundError
+    except PermissionError:
+        raise PermissionError
+    logger.debug('Directory created')
 
-    resp = requests.get(url)
-    soup = BeautifulSoup(resp.content, 'html.parser')
-    tag_list_all = soup(['link', 'img', 'script'])
+    soup = BeautifulSoup(resp_content, 'html.parser')
 
-    tag_lists = []
+    tag_attr_dict = {'img': 'src', 'link': 'href', 'script': 'src'}
+
+    # список из тегов 'link', 'img', 'script'
+    # при наличии атрибута 'src' или 'href'
+    tag_list_all = soup.find_all(
+        lambda tag:
+        tag.name in ['link', 'img', 'script'] and any(
+            [tag.has_attr('src'), tag.has_attr('href')]
+        )
+    )
+    logger.debug('Created list of selected tags')
+
     for tag in tag_list_all:
-        if check_tag(tag, u_netlog):
-            tag_dict = {}
-            # замена атрибута тега, список словарей с ресурсами
-            if tag.name == 'link':
-                full_url = urljoin(url, tag['href'])
-                tag['href'] = full_url
-                tag['href'] = "{}/{}".format(name_dir, conv_name(full_url))
+        attr = tag_attr_dict[tag.name]
+        attr_link = tag.get(attr)
+        # полная ссылка до ресурса
+        url_attr = urljoin(url, attr_link)
+        # имя аттрибута в новом формате
+        name_attr = convert_link_into_name(url_attr)
 
-                # словарь для загрузки файлов
-                tag_dict['link'] = full_url
-                tag_dict['filename'] = str(conv_name(full_url))
-                tag_dict['type'] = 'text'
-                # список словарей
-                tag_lists.append(tag_dict)
-            else:
-                full_url = urljoin(url, tag['src'])
-                tag['src'] = full_url
-                tag['src'] = "{}/{}".format(name_dir, conv_name(full_url))
+        if urlparse(url_attr)[1] == urlparse(url)[1]:
+            # изменить имя на заданное
+            url_attr_name = "{}/{}".format(name_dir, name_attr)
+            # сохранить по ссылке в заданном имени
+            path_to_file = Path(output_dir / name_attr)
+            resp = requests.get(url_attr)
+            logger.warning(f'Check url_attr: {resp}')
+            save_data(resp, path_to_file, tag.name)
+            # присвоить новое значение attr
+            tag[attr] = url_attr_name
 
-                # словарь для загрузки файлов
-                tag_dict['link'] = full_url
-                tag_dict['filename'] = str(conv_name(full_url))
-                tag_dict['type'] = 'img'
-                # список словарей
-                tag_lists.append(tag_dict)
-
+    # запись изменений в html документе
     path_to_html.write_text(soup.prettify())
-
-    # скачивание файлов в папку
-    save_data_to_dir(output_dir, tag_lists)
+    logger.debug('Overwrite html-file')
 
     return path_to_html
 
 
-def download(url, output_dir=None):
-    logging.info(f'''
+def download(url, output_dir=Path.cwd()):
+    logger.info(f'''
     Run the program with the parameters:
-    save to folder - {output_dir}
-    link to the page - {url}
-    --------------------------''')
+    store in the folder: {output_dir},
+    site link: {url}''')
 
-    output_dir = Path(Path.cwd() / output_dir)
+    path_to_output_dir = Path(Path.cwd() / output_dir)
+    logger.info(f'''
+    Absolute path to output directory:
+    {path_to_output_dir}''')
 
-    if not Path.exists(output_dir):
-        msg = 'This folder does not exist or path'
-        logging.warning(msg)
-        return msg
+    # Проверка подключения к сайту
+    try:
+        resp = requests.get(url)
+    except OSError:
+        raise OSError
+    logger.debug('URL checked')
 
-    path_to_file = format_page(url, output_dir)
+    path_to_file = format_page(url, resp.content, path_to_output_dir)
+    logger.debug('Print path_to_file')
 
     return path_to_file

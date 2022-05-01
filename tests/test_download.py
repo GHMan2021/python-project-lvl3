@@ -1,5 +1,6 @@
 import tempfile
 from pathlib import Path
+import pytest
 from page_loader import download
 
 
@@ -39,13 +40,6 @@ def test_download_returns_page_right_and_img(requests_mock):
         assert script == path_to_script.read_text()
 
 
-def test_download_returns_err_path_dir():
-    try:
-        download('https://ru.hexlet.io/courses', 'non-existent folder')
-    except ValueError as error:
-        assert error
-
-
 def test_download_returns_to_output_folder_path(requests_mock):
     page = Path("tests/fixtures/test/index.html").read_text()
     img = Path("tests/fixtures/test/nodejs.png").read_bytes()
@@ -67,8 +61,10 @@ def test_download_returns_to_output_folder_path(requests_mock):
 
 
 def test_download_returns_site_error():
-    try:
-        with tempfile.TemporaryDirectory() as tmp:
-            download('https://uu.hexlet.io/courses', tmp)
-    except ConnectionError as error:
-        assert error
+    with pytest.raises(OSError):
+        download('https://uu.hexlet.io/courses')
+
+
+def test_download_returns_err_path_dir():
+    with pytest.raises(FileNotFoundError):
+        download('https://ru.hexlet.io/courses', 'non-existent folder')
