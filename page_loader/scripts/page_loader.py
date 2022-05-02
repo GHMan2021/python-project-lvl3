@@ -14,11 +14,13 @@ def main():
     try:
         print(download(args.url, args.output))
     except FileNotFoundError:
-        sys.exit("This folder does not exist or wrong path")
+        sys.exit(1)
     except PermissionError:
-        sys.exit("No permission to create folder")
-    except OSError:
-        sys.exit("Error connection")
+        sys.exit(1)
+    except ConnectionError:
+        sys.exit(2)
+    except Exception:
+        sys.exit(3)
 
 
 if __name__ == '__main__':

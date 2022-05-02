@@ -24,11 +24,12 @@ def convert_link_into_name(link):
     # добавление расширения .html к странице
     if lnk_path.find('.') == -1:
         lnk_path = lnk_path + '.html'
+
     return "{}{}".format(lnk_netloc, lnk_path)
 
 
 def save_data(resp, path_to_file, tag_name):
-    # Запуск прогрессбара
+    # запуск прогрессбара
     filename = Path(path_to_file).name
     bar = Bar('--- Loading file: {}'.format(filename),
               suffix='%(percent).f%%', max=1)
@@ -57,17 +58,19 @@ def format_page(url, resp_content, output_dir):
     name_dir = re.sub(r'(.html)$', '_files', name_html)
     output_dir = Path(output_dir / name_dir)
 
-    # Запуск прогрессбара
+    # запуск прогрессбара
     dir_name = Path(output_dir).name
     bar = Bar('Create directory: {}'.format(dir_name),
               suffix='%(percent).f%%', max=1)
-    bar.next()
 
     try:
         output_dir.mkdir()
-    except FileNotFoundError:
+        bar.next()
+    except FileNotFoundError as e:
+        logger.warning(e)
         raise FileNotFoundError
-    except PermissionError:
+    except PermissionError as e:
+        logger.warning(e)
         raise PermissionError
 
     bar.finish()
@@ -106,7 +109,7 @@ def format_page(url, resp_content, output_dir):
             # присвоить новое значение attr
             tag[attr] = url_attr_name
 
-    # Запуск прогрессбара
+    # запуск прогрессбара
     filename = Path(path_to_html).name
     bar = Bar('Create html-file: {}'.format(filename),
               suffix='%(percent).f%%', max=1)
@@ -132,14 +135,15 @@ def download(url, output_dir=Path.cwd()):
     Absolute path to output directory:
     {path_to_output_dir}''')
 
-    # Проверка подключения к сайту
-    try:
-        resp = requests.get(url)
-    except OSError:
-        raise OSError
+    # проверка подключения к сайту
+    resp = requests.get(url)
+
+    if resp.status_code != 200:
+        logger.warning("Error connection")
+        raise ConnectionError
     logger.info('URL checked')
 
     path_to_file = format_page(url, resp.content, path_to_output_dir)
-    logger.info('Print path_to_file')
+    logger.info('Output path_to_file')
 
     return path_to_file

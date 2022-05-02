@@ -2,6 +2,7 @@ import tempfile
 from pathlib import Path
 import pytest
 from page_loader import download
+from urllib.parse import urljoin
 
 
 def test_download_returns_path_file_and_folder_name(requests_mock):
@@ -60,11 +61,19 @@ def test_download_returns_to_output_folder_path(requests_mock):
         assert path_to_page.exists()
 
 
-def test_download_returns_site_error():
-    with pytest.raises(OSError):
-        download('https://uu.hexlet.io/courses')
-
-
 def test_download_returns_err_path_dir():
     with pytest.raises(FileNotFoundError):
         download('https://ru.hexlet.io/courses', 'non-existent folder')
+
+
+BASE_URL = 'https://site.com/404'
+
+
+@pytest.mark.parametrize('code', [404, 500])
+def test_response_with_error(requests_mock, code):
+    url = urljoin(BASE_URL, str(code))
+    requests_mock.get(url, status_code=code)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        with pytest.raises(Exception):
+            assert download(url, tmp)
