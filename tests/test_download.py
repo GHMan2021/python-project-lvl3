@@ -13,13 +13,14 @@ def test_download_returns_path_file_and_folder_name(requests_mock):
         requests_mock.get('https://ru.hexlet.io/courses')
         result = download('https://ru.hexlet.io/courses', tmp)
 
-        assert path_to_file == result
+        assert str(path_to_file) == result
         assert path_to_folder.exists()
 
 
 def test_download_returns_page_right_and_img(requests_mock):
     page = Path("tests/fixtures/test/index.html").read_text()
-    page_right = Path("tests/fixtures/test/ru-hexlet-io-courses.html")
+    page_right = \
+        Path("tests/fixtures/test/ru-hexlet-io-courses.html").read_text()
 
     img = Path("tests/fixtures/test/nodejs.png").read_bytes()
 
@@ -31,12 +32,13 @@ def test_download_returns_page_right_and_img(requests_mock):
     requests_mock.get('https://ru.hexlet.io/packs/js/runtime.js', text=script)
 
     with tempfile.TemporaryDirectory() as tmp:
-        result = download('https://ru.hexlet.io/courses', tmp)
+        download('https://ru.hexlet.io/courses', tmp)
 
         path_to_img = Path(Path(tmp) / 'ru-hexlet-io-courses_files/ru-hexlet-io-assets-professions-nodejs.png')
         path_to_script = Path(Path(tmp) / 'ru-hexlet-io-courses_files/ru-hexlet-io-packs-js-runtime.js')
+        path_to_page = Path(Path(tmp) / 'ru-hexlet-io-courses.html')
 
-        assert page_right.read_text() == result.read_text()
+        assert page_right == path_to_page.read_text()
         assert img == path_to_img.read_bytes()
         assert script == path_to_script.read_text()
 

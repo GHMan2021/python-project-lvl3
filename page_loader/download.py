@@ -146,4 +146,4 @@ def download(url, output_dir=Path.cwd()):
     path_to_file = format_page(url, resp.content, path_to_output_dir)
     logger.info('Output path_to_file')
 
-    return path_to_file
+    return str(path_to_file)
