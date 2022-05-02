@@ -38,7 +38,7 @@ def save_data(resp, path_to_file, tag_name):
     if tag_name == 'img':
         path_to_file.write_bytes(resp.content)
     else:
-        path_to_file.write_text(resp.text)
+        path_to_file.write_bytes(resp.content)
 
     bar.finish()
 

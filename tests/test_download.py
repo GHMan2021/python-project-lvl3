@@ -18,18 +18,18 @@ def test_download_returns_path_file_and_folder_name(requests_mock):
 
 
 def test_download_returns_page_right_and_img(requests_mock):
-    page = Path("tests/fixtures/test/index.html").read_text()
+    page = Path("tests/fixtures/test/index.html").read_bytes()
     page_right = \
-        Path("tests/fixtures/test/ru-hexlet-io-courses.html").read_text()
+        Path("tests/fixtures/test/ru-hexlet-io-courses.html").read_bytes()
 
     img = Path("tests/fixtures/test/nodejs.png").read_bytes()
 
-    script = Path("tests/fixtures/test/index.html").read_text()
+    script = Path("tests/fixtures/test/index.html").read_bytes()
 
-    requests_mock.get('https://ru.hexlet.io/courses', text=page)
-    requests_mock.get('https://ru.hexlet.io/assets/application.css', text=page)
+    requests_mock.get('https://ru.hexlet.io/courses', content=page)
+    requests_mock.get('https://ru.hexlet.io/assets/application.css', content=page)
     requests_mock.get('https://ru.hexlet.io/assets/professions/nodejs.png', content=img)
-    requests_mock.get('https://ru.hexlet.io/packs/js/runtime.js', text=script)
+    requests_mock.get('https://ru.hexlet.io/packs/js/runtime.js', content=script)
 
     with tempfile.TemporaryDirectory() as tmp:
         download('https://ru.hexlet.io/courses', tmp)
@@ -38,20 +38,20 @@ def test_download_returns_page_right_and_img(requests_mock):
         path_to_script = Path(Path(tmp) / 'ru-hexlet-io-courses_files/ru-hexlet-io-packs-js-runtime.js')
         path_to_page = Path(Path(tmp) / 'ru-hexlet-io-courses.html')
 
-        assert page_right == path_to_page.read_text()
+        assert page_right == path_to_page.read_bytes()
         assert img == path_to_img.read_bytes()
-        assert script == path_to_script.read_text()
+        assert script == path_to_script.read_bytes()
 
 
 def test_download_returns_to_output_folder_path(requests_mock):
-    page = Path("tests/fixtures/test/index.html").read_text()
+    page = Path("tests/fixtures/test/index.html").read_bytes()
     img = Path("tests/fixtures/test/nodejs.png").read_bytes()
-    script = Path("tests/fixtures/test/index.html").read_text()
+    script = Path("tests/fixtures/test/index.html").read_bytes()
 
-    requests_mock.get('https://ru.hexlet.io/courses', text=page)
-    requests_mock.get('https://ru.hexlet.io/assets/application.css', text=page)
+    requests_mock.get('https://ru.hexlet.io/courses', content=page)
+    requests_mock.get('https://ru.hexlet.io/assets/application.css', content=page)
     requests_mock.get('https://ru.hexlet.io/assets/professions/nodejs.png', content=img)
-    requests_mock.get('https://ru.hexlet.io/packs/js/runtime.js', text=script)
+    requests_mock.get('https://ru.hexlet.io/packs/js/runtime.js', content=script)
 
     with tempfile.TemporaryDirectory() as tmp:
         output_dir = Path(Path(tmp) / 'output_folder')
