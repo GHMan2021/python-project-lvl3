@@ -28,18 +28,14 @@ def convert_link_into_name(link):
     return "{}{}".format(lnk_netloc, lnk_path)
 
 
-def save_data(resp, path_to_file, tag_name):
+def save_data(resp, path_to_file):
     # запуск прогрессбара
     filename = Path(path_to_file).name
     bar = Bar('--- Loading file: {}'.format(filename),
               suffix='%(percent).f%%', max=1)
     bar.next()
 
-    if tag_name == 'img':
-        path_to_file.write_bytes(resp.content)
-    else:
-        path_to_file.write_bytes(resp.content)
-
+    path_to_file.write_bytes(resp.content)
     bar.finish()
 
     return True
@@ -105,7 +101,7 @@ def format_page(url, resp_content, output_dir):
             path_to_file = Path(output_dir / name_attr)
             resp = requests.get(url_attr)
             logger.info(f'Check url_attr: {resp}')
-            save_data(resp, path_to_file, tag.name)
+            save_data(resp, path_to_file)
             # присвоить новое значение attr
             tag[attr] = url_attr_name
 
