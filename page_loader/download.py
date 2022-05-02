@@ -3,6 +3,7 @@ import requests
 from pathlib import Path
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
+from progress.bar import Bar
 
 from page_loader.logger import logger_config
 import logging.config
@@ -27,15 +28,24 @@ def convert_link_into_name(link):
 
 
 def save_data(resp, path_to_file, tag_name):
+    # Запуск прогрессбара
+    filename = Path(path_to_file).name
+    bar = Bar('--- Loading file: {}'.format(filename),
+              suffix='%(percent).f%%', max=1)
+    bar.next()
+
     if tag_name == 'img':
         path_to_file.write_bytes(resp.content)
     else:
         path_to_file.write_text(resp.text)
+
+    bar.finish()
+
     return True
 
 
 def format_page(url, resp_content, output_dir):
-    logger.debug(f'''
+    logger.info(f'''
     Run func with the parameters:
     url: {url}
     resp.content: html file
@@ -46,13 +56,22 @@ def format_page(url, resp_content, output_dir):
 
     name_dir = re.sub(r'(.html)$', '_files', name_html)
     output_dir = Path(output_dir / name_dir)
+
+    # Запуск прогрессбара
+    dir_name = Path(output_dir).name
+    bar = Bar('Create directory: {}'.format(dir_name),
+              suffix='%(percent).f%%', max=1)
+    bar.next()
+
     try:
         output_dir.mkdir()
     except FileNotFoundError:
         raise FileNotFoundError
     except PermissionError:
         raise PermissionError
-    logger.debug('Directory created')
+
+    bar.finish()
+    logger.info('Directory created')
 
     soup = BeautifulSoup(resp_content, 'html.parser')
 
@@ -66,7 +85,7 @@ def format_page(url, resp_content, output_dir):
             [tag.has_attr('src'), tag.has_attr('href')]
         )
     )
-    logger.debug('Created list of selected tags')
+    logger.info('Created list of selected tags')
 
     for tag in tag_list_all:
         attr = tag_attr_dict[tag.name]
@@ -82,14 +101,22 @@ def format_page(url, resp_content, output_dir):
             # сохранить по ссылке в заданном имени
             path_to_file = Path(output_dir / name_attr)
             resp = requests.get(url_attr)
-            logger.warning(f'Check url_attr: {resp}')
+            logger.info(f'Check url_attr: {resp}')
             save_data(resp, path_to_file, tag.name)
             # присвоить новое значение attr
             tag[attr] = url_attr_name
 
+    # Запуск прогрессбара
+    filename = Path(path_to_html).name
+    bar = Bar('Create html-file: {}'.format(filename),
+              suffix='%(percent).f%%', max=1)
+    bar.next()
+
     # запись изменений в html документе
     path_to_html.write_text(soup.prettify())
-    logger.debug('Overwrite html-file')
+    logger.info('Overwrite html-file')
+
+    bar.finish()
 
     return path_to_html
 
@@ -110,9 +137,9 @@ def download(url, output_dir=Path.cwd()):
         resp = requests.get(url)
     except OSError:
         raise OSError
-    logger.debug('URL checked')
+    logger.info('URL checked')
 
     path_to_file = format_page(url, resp.content, path_to_output_dir)
-    logger.debug('Print path_to_file')
+    logger.info('Print path_to_file')
 
     return path_to_file
