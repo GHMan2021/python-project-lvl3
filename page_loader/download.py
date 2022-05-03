@@ -41,7 +41,7 @@ def save_data(resp, path_to_file):
     return True
 
 
-def format_page(url, resp_content, output_dir):
+def create_data(url, resp_content, output_dir):
     logger.info(f'''
     Run func with the parameters:
     url: {url}
@@ -139,7 +139,7 @@ def download(url, output_dir=Path.cwd()):
         raise ConnectionError
     logger.info('URL checked')
 
-    path_to_file = format_page(url, resp.content, path_to_output_dir)
+    path_to_file = create_data(url, resp.content, path_to_output_dir)
     logger.info('Output path_to_file')
 
     return str(path_to_file)
